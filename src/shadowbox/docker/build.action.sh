@@ -14,14 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export DOCKER_CONTENT_TRUST="${DOCKER_CONTENT_TRUST:-1}"
+export DOCKER_CONTENT_TRUST="${DOCKER_CONTENT_TRUST:-0}"
 # Enable Docker BuildKit (https://docs.docker.com/develop/develop-images/build_enhancements)
 export DOCKER_BUILDKIT=1
 
 # Newer node images have no valid content trust data.
 # Pin the image node:16.14.0-alpine3.15 by hash.
 # See versions at https://hub.docker.com/_/node/
-readonly NODE_IMAGE="node@sha256:425c81a04546a543da824e67c91d4a603af16fbc3d875ee2f276acf8ec2b1577"
+readonly NODE_IMAGE="node:16.14.0-alpine3.15"
 
 # Doing an explicit `docker pull` of the container base image to work around an issue where
 # Travis fails to pull the base image when using BuildKit. Seems to be related to:
