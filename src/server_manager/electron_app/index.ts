@@ -19,6 +19,8 @@ import {autoUpdater} from 'electron-updater';
 import * as path from 'path';
 import {URL, URLSearchParams} from 'url';
 
+import type {HttpRequest, HttpResponse} from '../infrastructure/path_api';
+import {fetchWithPin} from './fetch';
 import * as menu from './menu';
 
 const app = electron.app;
@@ -70,7 +72,7 @@ function createMainWindow() {
     minWidth: 600,
     minHeight: 768,
     maximizable: false,
-    icon: path.join(__dirname, 'web_app', 'ui_components', 'icons', 'launcher.png'),
+    icon: path.join(__dirname, 'server_manager', 'web_app', 'images', 'launcher-icon.png'),
     webPreferences: {
       nodeIntegration: false,
       preload: path.join(__dirname, 'preload.js'),
@@ -237,23 +239,15 @@ function main() {
     }
   });
 
-  // Handle request to trust the certificate from the renderer process.
-  const trustedFingerprints = new Set<string>();
-  const makeKey = (host: string, fingerprint: string) => `${host};${fingerprint}`;
-  ipcMain.on('trust-certificate', (event: IpcEvent, host: string, fingerprint: string) => {
-    trustedFingerprints.add(makeKey(host, `sha256/${fingerprint}`));
-    event.returnValue = true;
-  });
-  app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
-    event.preventDefault();
-    try {
-      const parsed = new URL(url);
-      callback(trustedFingerprints.has(makeKey(parsed.host, certificate.fingerprint)));
-    } catch (e) {
-      console.error(e);
-      callback(false);
-    }
-  });
+  // Proxy for fetch calls that require fingerprint pinning.
+  ipcMain.handle(
+    'fetch-with-pin',
+    (
+      event: Electron.IpcMainInvokeEvent,
+      req: HttpRequest,
+      fingerprint: string
+    ): Promise<HttpResponse> => fetchWithPin(req, fingerprint)
+  );
 
   // Restores the mainWindow if minimized and brings it into focus.
   ipcMain.on('bring-to-front', (_event: IpcEvent) => {
